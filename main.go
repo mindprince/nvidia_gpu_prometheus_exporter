@@ -17,6 +17,8 @@ const (
 
 var (
 	addr = flag.String("web.listen-address", ":9445", "Address to listen on for web interface and telemetry.")
+
+	labels = []string{"uuid", "name"}
 )
 
 type Collector struct {
@@ -24,6 +26,10 @@ type Collector struct {
 	numDevices  prometheus.Gauge
 	usedMemory  *prometheus.GaugeVec
 	totalMemory *prometheus.GaugeVec
+	dutyCycle   *prometheus.GaugeVec
+	powerUsage  *prometheus.GaugeVec
+	temperature *prometheus.GaugeVec
+	fanSpeed    *prometheus.GaugeVec
 }
 
 func NewCollector() *Collector {
@@ -41,7 +47,7 @@ func NewCollector() *Collector {
 				Name:      "memory_used_bytes",
 				Help:      "Memory used by the GPU device in bytes",
 			},
-			[]string{"uuid", "name"},
+			labels,
 		),
 		totalMemory: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -49,7 +55,39 @@ func NewCollector() *Collector {
 				Name:      "memory_total_bytes",
 				Help:      "Total memory of the GPU device in bytes",
 			},
-			[]string{"uuid", "name"},
+			labels,
+		),
+		dutyCycle: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "duty_cycle",
+				Help:      "Percent of time over the past sample period during which one or more kernels were executing on the GPU device",
+			},
+			labels,
+		),
+		powerUsage: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "power_usage_milliwatts",
+				Help:      "Power usage for the GPU device in milliwatts",
+			},
+			labels,
+		),
+		temperature: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "temperature_celsius",
+				Help:      "Temperature of the GPU device in celsius",
+			},
+			labels,
+		),
+		fanSpeed: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "fanspeed_percent",
+				Help:      "Fanspeed of the GPU device as a percent of its maximum",
+			},
+			labels,
 		),
 	}
 }
@@ -58,6 +96,10 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.numDevices.Desc()
 	c.usedMemory.Describe(ch)
 	c.totalMemory.Describe(ch)
+	c.dutyCycle.Describe(ch)
+	c.powerUsage.Describe(ch)
+	c.temperature.Describe(ch)
+	c.fanSpeed.Describe(ch)
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
@@ -100,9 +142,41 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			c.usedMemory.WithLabelValues(uuid, name).Set(float64(usedMemory))
 			c.totalMemory.WithLabelValues(uuid, name).Set(float64(totalMemory))
 		}
+
+		dutyCycle, _, err := dev.UtilizationRates()
+		if err != nil {
+			log.Printf("UtilizationRates() error: %v", err)
+		} else {
+			c.dutyCycle.WithLabelValues(uuid, name).Set(float64(dutyCycle))
+		}
+
+		powerUsage, err := dev.PowerUsage()
+		if err != nil {
+			log.Printf("PowerUsage() error: %v", err)
+		} else {
+			c.powerUsage.WithLabelValues(uuid, name).Set(float64(powerUsage))
+		}
+
+		temperature, err := dev.Temperature()
+		if err != nil {
+			log.Printf("Temperature() error: %v", err)
+		} else {
+			c.temperature.WithLabelValues(uuid, name).Set(float64(temperature))
+		}
+
+		fanSpeed, err := dev.FanSpeed()
+		if err != nil {
+			log.Printf("FanSpeed() error: %v", err)
+		} else {
+			c.fanSpeed.WithLabelValues(uuid, name).Set(float64(fanSpeed))
+		}
 	}
 	c.usedMemory.Collect(ch)
 	c.totalMemory.Collect(ch)
+	c.dutyCycle.Collect(ch)
+	c.powerUsage.Collect(ch)
+	c.temperature.Collect(ch)
+	c.fanSpeed.Collect(ch)
 }
 
 func main() {
@@ -112,9 +186,7 @@ func main() {
 	}
 	defer gonvml.Shutdown()
 
-	collector := NewCollector()
-
-	prometheus.MustRegister(collector)
+	prometheus.MustRegister(NewCollector())
 
 	http.ListenAndServe(*addr, promhttp.Handler())
 }
