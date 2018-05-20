@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/mindprince/gonvml"
@@ -18,7 +19,7 @@ const (
 var (
 	addr = flag.String("web.listen-address", ":9445", "Address to listen on for web interface and telemetry.")
 
-	labels = []string{"uuid", "name"}
+	labels = []string{"minor_number", "uuid", "name"}
 )
 
 type Collector struct {
@@ -130,6 +131,13 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			continue
 		}
 
+		minorNumber, err := dev.MinorNumber()
+		if err != nil {
+			log.Printf("MinorNumber() error: %v", err)
+			continue
+		}
+		minor := strconv.Itoa(int(minorNumber))
+
 		uuid, err := dev.UUID()
 		if err != nil {
 			log.Printf("UUID() error: %v", err)
@@ -146,36 +154,36 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		if err != nil {
 			log.Printf("MemoryInfo() error: %v", err)
 		} else {
-			c.usedMemory.WithLabelValues(uuid, name).Set(float64(usedMemory))
-			c.totalMemory.WithLabelValues(uuid, name).Set(float64(totalMemory))
+			c.usedMemory.WithLabelValues(minor, uuid, name).Set(float64(usedMemory))
+			c.totalMemory.WithLabelValues(minor, uuid, name).Set(float64(totalMemory))
 		}
 
 		dutyCycle, _, err := dev.UtilizationRates()
 		if err != nil {
 			log.Printf("UtilizationRates() error: %v", err)
 		} else {
-			c.dutyCycle.WithLabelValues(uuid, name).Set(float64(dutyCycle))
+			c.dutyCycle.WithLabelValues(minor, uuid, name).Set(float64(dutyCycle))
 		}
 
 		powerUsage, err := dev.PowerUsage()
 		if err != nil {
 			log.Printf("PowerUsage() error: %v", err)
 		} else {
-			c.powerUsage.WithLabelValues(uuid, name).Set(float64(powerUsage))
+			c.powerUsage.WithLabelValues(minor, uuid, name).Set(float64(powerUsage))
 		}
 
 		temperature, err := dev.Temperature()
 		if err != nil {
 			log.Printf("Temperature() error: %v", err)
 		} else {
-			c.temperature.WithLabelValues(uuid, name).Set(float64(temperature))
+			c.temperature.WithLabelValues(minor, uuid, name).Set(float64(temperature))
 		}
 
 		fanSpeed, err := dev.FanSpeed()
 		if err != nil {
 			log.Printf("FanSpeed() error: %v", err)
 		} else {
-			c.fanSpeed.WithLabelValues(uuid, name).Set(float64(fanSpeed))
+			c.fanSpeed.WithLabelValues(minor, uuid, name).Set(float64(fanSpeed))
 		}
 	}
 	c.usedMemory.Collect(ch)
@@ -193,6 +201,12 @@ func main() {
 		log.Fatalf("Couldn't initialize gonvml: %v", err)
 	}
 	defer gonvml.Shutdown()
+
+	if driverVersion, err := gonvml.SystemDriverVersion(); err != nil {
+		log.Printf("SystemDriverVersion() error: %v", err)
+	} else {
+		log.Printf("SystemDriverVersion(): %v", driverVersion)
+	}
 
 	prometheus.MustRegister(NewCollector())
 
