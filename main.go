@@ -198,7 +198,7 @@ func main() {
 	flag.Parse()
 
 	if err := gonvml.Initialize(); err != nil {
-		log.Fatalf("Couldn't initialize gonvml: %v", err)
+		log.Fatalf("Couldn't initialize gonvml: %v. Make sure NVML is in the shared library search path.", err)
 	}
 	defer gonvml.Shutdown()
 
