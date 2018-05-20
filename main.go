@@ -38,7 +38,7 @@ func NewCollector() *Collector {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "num_devices",
-				Help:      "Number of NVIDIA GPU devices",
+				Help:      "Number of GPU devices",
 			},
 		),
 		usedMemory: prometheus.NewGaugeVec(
@@ -69,7 +69,7 @@ func NewCollector() *Collector {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "power_usage_milliwatts",
-				Help:      "Power usage for the GPU device in milliwatts",
+				Help:      "Power usage of the GPU device in milliwatts",
 			},
 			labels,
 		),
@@ -196,5 +196,6 @@ func main() {
 
 	prometheus.MustRegister(NewCollector())
 
+	// Serve on all paths under addr
 	log.Fatalf("ListenAndServe error: %v", http.ListenAndServe(*addr, promhttp.Handler()))
 }
