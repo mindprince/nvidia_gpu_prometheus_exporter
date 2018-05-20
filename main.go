@@ -107,6 +107,13 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.Lock()
 	defer c.Unlock()
 
+	c.usedMemory.Reset()
+	c.totalMemory.Reset()
+	c.dutyCycle.Reset()
+	c.powerUsage.Reset()
+	c.temperature.Reset()
+	c.fanSpeed.Reset()
+
 	numDevices, err := gonvml.DeviceCount()
 	if err != nil {
 		log.Printf("DeviceCount() error: %v", err)
@@ -180,13 +187,14 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func main() {
-	err := gonvml.Initialize()
-	if err != nil {
+	flag.Parse()
+
+	if err := gonvml.Initialize(); err != nil {
 		log.Fatalf("Couldn't initialize gonvml: %v", err)
 	}
 	defer gonvml.Shutdown()
 
 	prometheus.MustRegister(NewCollector())
 
-	http.ListenAndServe(*addr, promhttp.Handler())
+	log.Fatalf("ListenAndServe error: %v", http.ListenAndServe(*addr, promhttp.Handler()))
 }
