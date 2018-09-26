@@ -211,13 +211,13 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		if err != nil {
 			log.Printf("EncoderUtilization() error: %v", err)
 		} else {
-			c.EncoderUtilization.WithLabelValues(minor, uuid, name).Set(float64(encUsage))
+			c.encUsage.WithLabelValues(minor, uuid, name).Set(float64(encUsage))
 		}
 		decUsage, _, err := dev.DecoderUtilization()
 		if err != nil {
 			log.Printf("DecoderUtilization() error: %v", err)
 		} else {
-			c.DecoderUtilization.WithLabelValues(minor, uuid, name).Set(float64(decUsage))
+			c.decUsage.WithLabelValues(minor, uuid, name).Set(float64(decUsage))
 		}
 	}
 	c.usedMemory.Collect(ch)
