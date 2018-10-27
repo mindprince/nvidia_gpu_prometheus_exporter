@@ -29,3 +29,29 @@ their location.
 
 By default the metrics are exposed on port `9445`. This can be updated using
 the `-web.listen-address` flag.
+
+## Running inside a container
+
+There's a docker image available on Docker Hub at
+[mindprince/nvidia_gpu_prometheus_exporter](https://hub.docker.com/r/mindprince/nvidia_gpu_prometheus_exporter/)
+
+If you are running the exporter inside a container, you will need to do the
+following to give the container access to NVML library:
+```
+-e LD_LIBRARY_PATH=<path-where-nvml-is-present>
+--volume <above-path>:<above-path>
+```
+
+And you will need to do one of the following to give it access to the GPU
+devices:
+- Run with `--privileged`
+- If you are on docker v17.04.0-ce or above, run with `--device-cgroup-rule 'c 195:* mrw'`
+- Run with `--device /dev/nvidiactl:/dev/nvidiactl /dev/nvidia0:/dev/nvidia0 /dev/nvidia1:/dev/nvidia1 <and-so-on-for-all-nvidia-devices>`
+
+If you don't want to do the above, you can run it using nvidia-docker.
+
+## Running using [nvidia-docker](https://github.com/NVIDIA/nvidia-docker)
+
+```
+nvidia-docker run -p 9445:9445 -ti mindprince/nvidia_gpu_prometheus_exporter:0.1
+```
