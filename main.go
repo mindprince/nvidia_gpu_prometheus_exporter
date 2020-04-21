@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/mindprince/gonvml"
 	"github.com/prometheus/client_golang/prometheus"
