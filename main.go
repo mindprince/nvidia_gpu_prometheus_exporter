@@ -72,7 +72,7 @@ func NewCollector() *Collector {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "avg_duty_cycle",
-				Help:      "Average time over the past seconds during which one or more kernels were executing on the GPU device",
+				Help:      "Average time over the past 15 seconds during which one or more kernels were executing on the GPU device",
 			},
 			labels,
 		),
@@ -177,9 +177,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			c.dutyCycle.WithLabelValues(minor, uuid, name).Set(float64(dutyCycle))
 		}
 
-		avgDuty, err := dev.AverageGPUUtilization(time.Duration(10) * time.Second)
+		avgDuty, err := dev.AverageGPUUtilization(time.Duration(15) * time.Second)
 		if err != nil {
-			log.Printf("AverageGPUUtilization(time.Duration(10) * time.Second) error: %v", err)
+			log.Printf("AverageGPUUtilization() error: %v", err)
 		} else {
 			c.avgDuty.WithLabelValues(minor, uuid, name).Set(float64(avgDuty))
 		}
