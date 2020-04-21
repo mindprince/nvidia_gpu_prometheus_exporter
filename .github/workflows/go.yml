@@ -10,7 +10,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: golang
     steps:
 
     - name: Set up Go 1.13
@@ -24,7 +24,7 @@ jobs:
 
     - name: Get dependencies
       run: |
-        go get -v -t -d ./...
+        go get -v .
         if [ -f Gopkg.toml ]; then
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
