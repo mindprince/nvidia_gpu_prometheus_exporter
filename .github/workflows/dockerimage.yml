@@ -15,4 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ealgra/nvidia_gpu_prometheus_exporter:$(date +%s)
+      run: docker build . --file Dockerfile --tag ealgra/nvidia_gpu_prometheus_exporter
+    - name: Publish Docker image as latest
+      run: docker push ealgra/nvidia_gpu_prometheus_exporter
+      
