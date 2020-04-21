@@ -15,5 +15,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag nvidia_gpu_prometheus_exporter:$(time "%s")
+      run: docker build . --file Dockerfile --tag nvidia_gpu_prometheus_exporter:$(date "+%s")
       
