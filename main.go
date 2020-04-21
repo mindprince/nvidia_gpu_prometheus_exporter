@@ -176,9 +176,9 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			c.dutyCycle.WithLabelValues(minor, uuid, name).Set(float64(dutyCycle))
 		}
 
-		avgDuty, _, err := dev.AverageGPUUtilization("10s")
+		avgDuty, _, err := dev.AverageGPUUtilization(time.Duration)
 		if err != nil {
-			log.Printf("AverageGPUUtilization() error: %v", err)
+			log.Printf("AverageGPUUtilization(time.Duration(10) * time.Second) error: %v", err)
 		} else {
 			c.avgDuty.WithLabelValues(minor, uuid, name).Set(float64(avgDuty))
 		}
