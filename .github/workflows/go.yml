@@ -24,7 +24,7 @@ jobs:
 
     - name: Get dependencies
       run: |
-        export GOBIN=$GOPATH/bin
+        set $GOPATH=.
         go get -v .
         if [ -f Gopkg.toml ]; then
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
