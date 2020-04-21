@@ -28,6 +28,7 @@ type Collector struct {
 	usedMemory  *prometheus.GaugeVec
 	totalMemory *prometheus.GaugeVec
 	dutyCycle   *prometheus.GaugeVec
+	avgDuty     *prometheus.GaugeVec
 	powerUsage  *prometheus.GaugeVec
 	temperature *prometheus.GaugeVec
 	fanSpeed    *prometheus.GaugeVec
@@ -66,6 +67,14 @@ func NewCollector() *Collector {
 			},
 			labels,
 		),
+		avgDuty: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "avg_duty_cycle",
+				Help:      "Average time over the past sample period during which one or more kernels were executing on the GPU device",
+			},
+			labels,
+		),
 		powerUsage: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
@@ -98,6 +107,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	c.usedMemory.Describe(ch)
 	c.totalMemory.Describe(ch)
 	c.dutyCycle.Describe(ch)
+	c.avgDuty.Describe(ch)	
 	c.powerUsage.Describe(ch)
 	c.temperature.Describe(ch)
 	c.fanSpeed.Describe(ch)
@@ -111,6 +121,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.usedMemory.Reset()
 	c.totalMemory.Reset()
 	c.dutyCycle.Reset()
+	c.avgDuty.Reset()
 	c.powerUsage.Reset()
 	c.temperature.Reset()
 	c.fanSpeed.Reset()
@@ -165,6 +176,13 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			c.dutyCycle.WithLabelValues(minor, uuid, name).Set(float64(dutyCycle))
 		}
 
+		avgDuty, _, err := dev.AverageGPUUtilization()
+		if err != nil {
+			log.Printf("AverageGPUUtilization() error: %v", err)
+		} else {
+			c.avgDuty.WithLabelValues(minor, uuid, name).Set(float64(avgDuty))
+		}
+
 		powerUsage, err := dev.PowerUsage()
 		if err != nil {
 			log.Printf("PowerUsage() error: %v", err)
@@ -189,6 +207,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.usedMemory.Collect(ch)
 	c.totalMemory.Collect(ch)
 	c.dutyCycle.Collect(ch)
+	c.avgDuty.Collect(ch)
 	c.powerUsage.Collect(ch)
 	c.temperature.Collect(ch)
 	c.fanSpeed.Collect(ch)
