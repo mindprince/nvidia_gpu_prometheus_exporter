@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+  "os"
 	"net/http"
 	"strconv"
 	"sync"
@@ -20,7 +21,7 @@ const (
 var (
 	addr = flag.String("web.listen-address", ":9445", "Address to listen on for web interface and telemetry.")
 
-	labels = []string{"minor_number", "uuid", "name"}
+	labels = []string{"minor_number", "uuid", "name", "label"}
 )
 
 type Collector struct {
@@ -161,48 +162,55 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			log.Printf("Name() error: %v", err)
 			continue
 		}
+    
+    label, err := os.Getenv("ADDITIONAL_LABEL")
+		if err != nil {
+			log.Printf("Name() error: %v", err)
+			continue
+      label := ""
+		}
 
 		totalMemory, usedMemory, err := dev.MemoryInfo()
 		if err != nil {
 			log.Printf("MemoryInfo() error: %v", err)
 		} else {
-			c.usedMemory.WithLabelValues(minor, uuid, name).Set(float64(usedMemory))
-			c.totalMemory.WithLabelValues(minor, uuid, name).Set(float64(totalMemory))
+			c.usedMemory.WithLabelValues(minor, uuid, name, label).Set(float64(usedMemory))
+			c.totalMemory.WithLabelValues(minor, uuid, name, label).Set(float64(totalMemory))
 		}
 
 		dutyCycle, _, err := dev.UtilizationRates()
 		if err != nil {
 			log.Printf("UtilizationRates() error: %v", err)
 		} else {
-			c.dutyCycle.WithLabelValues(minor, uuid, name).Set(float64(dutyCycle))
+			c.dutyCycle.WithLabelValues(minor, uuid, name, label).Set(float64(dutyCycle))
 		}
 
 		avgDuty, err := dev.AverageGPUUtilization(time.Duration(15) * time.Second)
 		if err != nil {
 			log.Printf("AverageGPUUtilization() error: %v", err)
 		} else {
-			c.avgDuty.WithLabelValues(minor, uuid, name).Set(float64(avgDuty))
+			c.avgDuty.WithLabelValues(minor, uuid, name, label).Set(float64(avgDuty))
 		}
 
 		powerUsage, err := dev.PowerUsage()
 		if err != nil {
 			log.Printf("PowerUsage() error: %v", err)
 		} else {
-			c.powerUsage.WithLabelValues(minor, uuid, name).Set(float64(powerUsage))
+			c.powerUsage.WithLabelValues(minor, uuid, name, label).Set(float64(powerUsage))
 		}
 
 		temperature, err := dev.Temperature()
 		if err != nil {
 			log.Printf("Temperature() error: %v", err)
 		} else {
-			c.temperature.WithLabelValues(minor, uuid, name).Set(float64(temperature))
+			c.temperature.WithLabelValues(minor, uuid, name, label).Set(float64(temperature))
 		}
 
 		fanSpeed, err := dev.FanSpeed()
 		if err != nil {
 			log.Printf("FanSpeed() error: %v", err)
 		} else {
-			c.fanSpeed.WithLabelValues(minor, uuid, name).Set(float64(fanSpeed))
+			c.fanSpeed.WithLabelValues(minor, uuid, name, label).Set(float64(fanSpeed))
 		}
 	}
 	c.usedMemory.Collect(ch)
